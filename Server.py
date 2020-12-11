@@ -8,19 +8,23 @@ import socket
 import sys
 import os 
 import random
+<<<<<<< HEAD
 import json
+=======
+import time
+>>>>>>> 75bec65bcb68f0219c3df6a9f2a54e1f92e0bb38
 
 from Crypto.Cipher import AES
 # from Crypto.Util.Padding import pad, unpad
 
 
 def server():
-	
+	SAVE_PATH = ("/home/kali/Desktop/")
 
 	#Server port
 	serverPort = 13000
 	MENU = "Select the operation:\n\t1) Create and send an email\n\t2) Display the inbox list\n\t3) Display the email contents\n\t4) Terminate the connection\nChoice: "
-	
+
 	#Server sockets: uses IPv4 and TCP protocols
 	try:
 		serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -103,16 +107,16 @@ def server():
 				
 					if userChoice == "1":
 						connectionSocket.send("Send the email".encode('ascii'))
-						receiveEmail(connectionSocket)
+						receiveEmail(connectionSocket, SAVE_PATH)
 						
 
 					elif userChoice == "2":
-						viewInbox()
 						connectionSocket.send("2".encode('ascii'))
+						viewInbox(connectionSocket, SAVE_PATH)
 						
 					elif userChoice == "3":
-						viewEmail()
 						connectionSocket.send("3".encode('ascii'))
+						viewEmail(connectionSocket, SAVE_PATH)
 						
 					else:
 						connectionSocket.send(MENU.encode('ascii'))
@@ -136,6 +140,10 @@ def server():
 			print('Error occurred: ', e)
 			serverSocket.close()
 			sys.exit(1)
+	
+		except Exception as inst:
+			print("Error with", inst)
+
 		#except:
 			#print('Goodbye')
 			#serverSocket.close()
@@ -147,7 +155,7 @@ def server():
 #menu Functions
 ###########################################################
 
-def receiveEmail(connectionSocket):
+def receiveEmail(connectionSocket, SAVE_PATH):
 	emailFrom = connectionSocket.recv(2048).decode('ascii')
 	connectionSocket.send("Send to: ".encode('ascii'))
 	emailTo = connectionSocket.recv(2048).decode('ascii')
@@ -160,15 +168,56 @@ def receiveEmail(connectionSocket):
 	email = "From: " + emailFrom + "\nTo: " + emailTo + "\nTime and Date: " + emailTime + "\nTitle: " + emailTitle + "\nContent length: " + emailLength + "\nContent: " + emailMessage
 
 	connectionSocket.send("TERMINATE".encode('ascii'))
+
+	emailToList = emailTo.split(";")
+
+	for e in emailToList :
+
+		path = SAVE_PATH + e + "/"
+		name = os.path.join(path, emailTitle + ".txt")
+		file1 = open(name, "w")
+		file1.write(email)
+		file1.close()
+
 	print("An email from " + emailFrom + " is sent to " + emailTo + ", has a content length " + emailLength + ".")
 
 	
+def viewInbox(connectionSocket, SAVE_PATH):
+	username = connectionSocket.recv(2048).decode('ascii')
+	path = SAVE_PATH + username + "/"
+	clientMail = os.listdir(path)
+	index = 1
+	for mail in clientMail:
+		with open(path + mail, 'r') as file1:
+			for line in file1:
+				if line.split(":")[0] == "From":
+					Sender = line.split(": ")[1].rstrip()
+				if line.split(":")[0] == "Time and Date":
+					timeSent = line.split(": ")[1].rstrip()
+				if line.split(":")[0] == "Title":
+					title = line.split(": ")[1].rstrip()
+					
+		mailIndex = str(index)
+		email = mailIndex + "\t" + Sender + "\t" + timeSent + "\t" + title
+		connectionSocket.send(email.encode('ascii'))
+		time.sleep(0.0001)
+		index += 1
+		
+	connectionSocket.send("TERMINATE".encode('ascii'))
 
-def viewInbox():
-	print("call to view inbox protocol")
-
-def viewEmail():
-	print("call to view email")
+def viewEmail(connectionSocket, SAVE_PATH):
+	username = connectionSocket.recv(2048).decode('ascii')
+	path = SAVE_PATH + username + "/"
+	clientMail = os.listdir(path)
+	connectionSocket.send("Enter the email index you wish to view: ".encode('ascii'))
+	index = connectionSocket.recv(2048).decode('ascii')
+	file1 = open(path + clientMail[int(index) -1], 'r')
+	for line in file1:
+		connectionSocket.send(line.rstrip().encode('ascii'))
+		time.sleep(0.0001)
+	connectionSocket.send("TERMINATE".encode('ascii'))
+	
+	
 	
 ###########################################################
 #encryption/decryption Functions
@@ -182,5 +231,4 @@ def checkClient(name, password):
 		return False
 #---------
 server()
-
 
