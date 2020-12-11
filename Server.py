@@ -14,12 +14,12 @@ from Crypto.Cipher import AES
 
 
 def server():
-	
+	SAVE_PATH = ("/home/kali/Desktop/")
 
 	#Server port
 	serverPort = 13000
 	MENU = "Select the operation:\n\t1) Create and send an email\n\t2) Display the inbox list\n\t3) Display the email contents\n\t4) Terminate the connection\nChoice: "
-	
+
 	#Server sockets: uses IPv4 and TCP protocols
 	try:
 		serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -98,7 +98,7 @@ def server():
 				
 					if userChoice == "1":
 						connectionSocket.send("Send the email".encode('ascii'))
-						receiveEmail(connectionSocket)
+						receiveEmail(connectionSocket, SAVE_PATH)
 						
 
 					elif userChoice == "2":
@@ -131,10 +131,10 @@ def server():
 			print('Error occurred: ', e)
 			serverSocket.close()
 			sys.exit(1)
-		
+	
 		except Exception as inst:
-			print('Error with', inst)
-		
+			print("Error with", inst)
+
 		#except:
 			#print('Goodbye')
 			#serverSocket.close()
@@ -146,7 +146,7 @@ def server():
 #menu Functions
 ###########################################################
 
-def receiveEmail(connectionSocket):
+def receiveEmail(connectionSocket, SAVE_PATH):
 	emailFrom = connectionSocket.recv(2048).decode('ascii')
 	connectionSocket.send("Send to: ".encode('ascii'))
 	emailTo = connectionSocket.recv(2048).decode('ascii')
@@ -159,6 +159,17 @@ def receiveEmail(connectionSocket):
 	email = "From: " + emailFrom + "\nTo: " + emailTo + "\nTime and Date: " + emailTime + "\nTitle: " + emailTitle + "\nContent length: " + emailLength + "\nContent: " + emailMessage
 
 	connectionSocket.send("TERMINATE".encode('ascii'))
+
+	emailToList = emailTo.split(";")
+
+	for e in emailToList :
+
+		path = SAVE_PATH + e + "/"
+		name = os.path.join(path, emailTitle + ".txt")
+		file1 = open(name, "w")
+		file1.write(email)
+		file1.close()
+
 	print("An email from " + emailFrom + " is sent to " + emailTo + ", has a content length " + emailLength + ".")
 
 	
@@ -178,5 +189,7 @@ def viewEmail():
 
 #---------
 server()
+
+
 
 
