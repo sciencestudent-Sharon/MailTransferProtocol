@@ -7,9 +7,17 @@
 
 import socket
 import sys
+import socket
+import os 
+import json
+import time
+
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Cipher import PKCS1_OAEP
 
 from Crypto.Cipher import AES
-# from Crypto.Util.Padding import pad, unpad
+#from Crypto.Util.Padding import pad, unpad
 
 def client():
 
@@ -33,24 +41,33 @@ def client():
 		username = input("Enter your username: ")
 		password = input("Enter your password: ")
 		clientInfo += username + '\n' + password
-		
+
+		#clientInfo = encryptWithPublic(clientInfo)
+		#public_key = clientInfo.publickey().exportKey() #here
+
 		#here, encryption with server public key on clientinfo
 		#send client info
+		#clientSocket.send(encryptWithPublic(clientInfo)) #X?X?X?X?X?X?X?X?X?X?
 		clientSocket.send(clientInfo.encode('ascii'))
 		
 		
-		message = clientSocket.recv(2048).decode('ascii')
-		print(message)
+		pubEncMessage = clientSocket.recv(2048) #X?X?X?X?X?X?X?X?
+		#print(message) #<---------UNCOMMMENT
+		#message = decryptionPublic(pubEncMessage) #correct
+		message = pubEncMessage.decode('ascii') #replace
+	
 		
 		if message == "Invalid username or password":
 			print("Invalid username or password\nTerminating.")
 			clientSocket.close()
+			return
 		else:
 			#decrypt message here
 			#store key here
 			#encrypt symmetric key here
 			confirm = "OK"
 			clientSocket.send(confirm.encode('ascii'))
+			print(confirm + "Waiting")
 		
 		
 		#menu = clientSocket.recv(2048).decode('ascii')
@@ -64,7 +81,7 @@ def client():
 		#reply = input(userNameRequest)
 
 		
-		received = clientSocket.recv(2048).decode('ascii')
+		received = clientSocket.recv(2048).decode('ascii') #X?X?X?X?X?X?X?X?
 
 		choice = "0"
 		while (received != "4"):
@@ -78,14 +95,12 @@ def client():
 				clientSocket.send(choice.encode('ascii'))
 
 			elif received == "3":
-				viewEmail()
-				choice = input("Choice: ")
+				choice = viewEmail(clientSocket, username)
 				clientSocket.send(choice.encode('ascii'))
 
 			else:
 				choice = input(received)
 				clientSocket.send(choice.encode('ascii'))
-				#choice = input(menu)
 				
 			
 			#encrypt choice here
@@ -119,26 +134,79 @@ def sendEmail(clientSocket, username):
 		message = clientSocket.recv(2048).decode('ascii')
 		
 	print("The message is sent to the server")
+	print()
 	return "0"
 
 def viewInbox(clientSocket, username):
+	print("Index\tFrom\tDateTime\t\tTitle")
 	choice = username
 	clientSocket.send(choice.encode('ascii'))
 	message = clientSocket.recv(2048).decode('ascii')
 	while message != "TERMINATE":
 		print(message)
 		message = clientSocket.recv(2048).decode('ascii')
+	print()
 	return "0"
 
-def viewEmail():
-	print("call to view email")
-
+def viewEmail(clientSocket, username):
+	choice = username
+	clientSocket.send(choice.encode('ascii'))
+	message = clientSocket.recv(2048).decode('ascii')
+	choice = input(message)
+	clientSocket.send(choice.encode('ascii'))
+	print()
+	message = clientSocket.recv(2048).decode('ascii')
+	while message != "TERMINATE":
+		print(message)
+		message = clientSocket.recv(2048).decode('ascii')
+	print()
+	return "0"
 
 ###########################################################
 #encryption/decryption Functions
 ###########################################################
+def fileHandler(fname):
+	keyFile = open(fname, "rb")
+	content = keyFile.read()
+	return content
+	
+def getPubKey():
+	pubKey = fileHandler("server_public.pem")
+	return pubKey
+	
+def encryptWithPublic(message):
+	pubkey = RSA.importKey(getPubKey()) #here
+	cipher_rsa_en = PKCS1_OAEP.new(pubkey)
+	enc_data = cipher_rsa_en.encrypt(pad(message).encode('ascii'))
+	print(enc_data)
+	return enc_data
 
+def decryptionPublic(encryptedMessage):
+	pubkey = RSA.importKey(getPubKey()) #here
+	cipher_rsa_dec = PKCS1_OAEP.new(pubkey)
+	dec_data = cipher_rsa_dec.decrypt(encryptedMessage)
+	return unpad(dec_data)
 
+######################################################
+def fileSymKey(clientName, encSymKey):
+	keyFile = open(clientName + "_private.pem", "wb")
+	keyFile.write(encSymKey)
+	
+########################################################
+#PADDING SECTION
+
+def pad(s):
+	#while len(s) % 16 != 0:
+		#s = s + "{"
+	lambda s: s + (16 - len(s) % 16) * '{'
+	return s
+
+def unpad(message):
+	message = message.rstrip('{')
+	return message
+
+	
 
 #------
 client()
+
