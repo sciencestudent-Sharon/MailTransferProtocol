@@ -12,12 +12,14 @@ import json
 import time
 
 from Crypto.Cipher import AES
-# from Crypto.Util.Padding import pad, unpad
-
+from Crypto.Util.Padding import pad, unpad
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Cipher import PKCS1_OAEP
 
 def server():
-	#SAVE_PATH = ("/home/sharon/Documents/")
-	SAVE_PATH = ("/home/kali/Desktop/")
+	SAVE_PATH = ("/home/sharon/Documents/")
+	#SAVE_PATH = ("/home/kali/Desktop/")
 
 	#Server port
 	serverPort = 13000
@@ -59,12 +61,13 @@ def server():
 				#Communication Exchange
 				
 				#Server sends welcome to client & receives their name
-				clientInfo = connectionSocket.recv(2048).decode('ascii')
+				clientInfo = connectionSocket.recv(2048)
 				
 				#decrypt client info
+				decClientInfo = decryptionPubic(clientInfo)
 				
 				#check if client info valid
-				info_split = clientInfo.split('\n')
+				info_split = decClientInfo.split('\n')
 				userName = info_split[0]
 				userPassword = info_split[1]				
 				valid = checkClient(userName,userPassword) #validity variable
@@ -72,10 +75,12 @@ def server():
 				if valid == True:
 					#generate symm key here
 					#send symm key to client here
-					symmKey = "KEY" # replace
-					connectionSocket.send(symmKey.encode('ascii'))
+					symmKey = encryptSymKey(userName)
+					connectionSocket.send(symmKey)
 					
 					print("Connection Accepted and Symmetric Key Generated for client:")
+					return #<----- REMOVE
+
 				else:
 					invalidMessage = "Invalid username or password"
 					connectionSocket.send(invalidMessage.encode('ascii'))
@@ -229,6 +234,59 @@ def checkClient(name, password):
 		return True
 	else:
 		return False
+		
+def fileHandler(fname):
+	keyFile = open(fname, "rb")
+	content = keyFile.read()
+	return content
+
+def getPubKey():
+	pubKey = fileHandler("server_public.pem")
+	return pubKey
+
+def getPrivKey():
+	privKey = fileHandler("server_private.pem")
+	return privKey
+
+def decryptionPubic(encryptedMessage):
+	privkey = RSA.import_key(getPrivKey())
+	cipher_rsa_dec = PKCS1_OAEP.new(privkey)
+	dec_data = cipher_rsa_dec.decrypt(encryptedMessage)
+	return dec_data.decode('ascii')
+
+
+#########################################################
+#use client public RSA key to encrypt generated AES key
+#Reference: https://pycryptodome.readthedocs.io/en/latest/src/examples.html#encrypt-data-with-rsa
+
+def generateSessionKey():
+	keyLen = 256
+	session_key = get_random_bytes(int(keyLen/8))
+	return session_key
+
+def getClientPubKey(clientName):
+	pubClientKey = fileHandler(clientName + "_public.pem")
+	return pubClientKey
+
+
+def encryptionPubicClient(clientName, cipher):
+	pubkey = RSA.import_key(getClientPubKey(clientName))
+	cipher_rsa_en = PKCS1_OAEP.new(pubkey)
+	session_key = generateSessionKey()
+	enc_session_key = cipher_rsa_en.encrypt(session_key)
+	return enc_session_key
+
+
+def encryptSymKey(clientName):
+	cipher = generateSessionKey()
+	encSymKey = encryptionPubicClient(clientName, cipher)
+	return encSymKey
+
+
+
+
+
+
 #---------
 server()
 

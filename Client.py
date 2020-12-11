@@ -7,9 +7,17 @@
 
 import socket
 import sys
+import socket
+import os 
+import json
+import time
+
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Cipher import PKCS1_OAEP
 
 from Crypto.Cipher import AES
-# from Crypto.Util.Padding import pad, unpad
+from Crypto.Util.Padding import pad, unpad
 
 def client():
 
@@ -33,16 +41,19 @@ def client():
 		username = input("Enter your username: ")
 		password = input("Enter your password: ")
 		clientInfo += username + '\n' + password
-		
+
+		clientInfo = encryptWithPublic(clientInfo)
+
 		#here, encryption with server public key on clientinfo
 		#send client info
-		clientSocket.send(clientInfo.encode('ascii'))
+		clientSocket.send(clientInfo)
 		
 		
-		message = clientSocket.recv(2048).decode('ascii')
-		print(message)
+		message = clientSocket.recv(2048)
+		#print(message) #<---------UNCOMMMENT
+		return #<----- REMOVE
 		
-		if message == "Invalid username or password":
+		if message.decode('ascii') == "Invalid username or password":
 			print("Invalid username or password\nTerminating.")
 			clientSocket.close()
 			return
@@ -149,8 +160,27 @@ def viewEmail(clientSocket, username):
 ###########################################################
 #encryption/decryption Functions
 ###########################################################
+def fileHandler(fname):
+	keyFile = open(fname, "rb")
+	content = keyFile.read()
+	return content
+	
+def getPubKey():
+	pubKey = fileHandler("server_public.pem")
+	return pubKey
+	
+def encryptWithPublic(message):
+	pubkey = RSA.import_key(getPubKey())
+	cipher_rsa_en = PKCS1_OAEP.new(pubkey)
+	enc_dat = cipher_rsa_en.encrypt(message.encode('ascii'))
+	return enc_dat
 
-
+######################################################
+def fileSymKey(clientName, encSymKey):
+	keyFile = open(clientName + "_private.pem", "wb")
+	keyFile.write(encSymKey)
+	
+	
 
 #------
 client()
