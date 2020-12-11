@@ -78,14 +78,12 @@ def client():
 				clientSocket.send(choice.encode('ascii'))
 
 			elif received == "3":
-				viewEmail()
-				choice = input("Choice: ")
+				choice = viewEmail(clientSocket, username)
 				clientSocket.send(choice.encode('ascii'))
 
 			else:
 				choice = input(received)
 				clientSocket.send(choice.encode('ascii'))
-				#choice = input(menu)
 				
 			
 			#encrypt choice here
@@ -119,20 +117,33 @@ def sendEmail(clientSocket, username):
 		message = clientSocket.recv(2048).decode('ascii')
 		
 	print("The message is sent to the server")
+	print()
 	return "0"
 
 def viewInbox(clientSocket, username):
+	print("Index\tFrom\tDateTime\t\tTitle")
 	choice = username
 	clientSocket.send(choice.encode('ascii'))
 	message = clientSocket.recv(2048).decode('ascii')
 	while message != "TERMINATE":
 		print(message)
 		message = clientSocket.recv(2048).decode('ascii')
+	print()
 	return "0"
 
-def viewEmail():
-	print("call to view email")
-
+def viewEmail(clientSocket, username):
+	choice = username
+	clientSocket.send(choice.encode('ascii'))
+	message = clientSocket.recv(2048).decode('ascii')
+	choice = input(message)
+	clientSocket.send(choice.encode('ascii'))
+	print()
+	message = clientSocket.recv(2048).decode('ascii')
+	while message != "TERMINATE":
+		print(message)
+		message = clientSocket.recv(2048).decode('ascii')
+	print()
+	return "0"
 
 ###########################################################
 #encryption/decryption Functions
