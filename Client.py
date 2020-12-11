@@ -17,7 +17,7 @@ from Crypto.Random import get_random_bytes
 from Crypto.Cipher import PKCS1_OAEP
 
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+#from Crypto.Util.Padding import pad, unpad
 
 def client():
 
@@ -42,18 +42,22 @@ def client():
 		password = input("Enter your password: ")
 		clientInfo += username + '\n' + password
 
-		clientInfo = encryptWithPublic(clientInfo)
+		#clientInfo = encryptWithPublic(clientInfo)
+		#public_key = clientInfo.publickey().exportKey() #here
 
 		#here, encryption with server public key on clientinfo
 		#send client info
-		clientSocket.send(clientInfo)
+		#clientSocket.send(encryptWithPublic(clientInfo)) #X?X?X?X?X?X?X?X?X?X?
+		clientSocket.send(clientInfo.encode('ascii'))
 		
 		
-		message = clientSocket.recv(2048)
+		pubEncMessage = clientSocket.recv(2048) #X?X?X?X?X?X?X?X?
 		#print(message) #<---------UNCOMMMENT
-		return #<----- REMOVE
+		#message = decryptionPublic(pubEncMessage) #correct
+		message = pubEncMessage.decode('ascii') #replace
+	
 		
-		if message.decode('ascii') == "Invalid username or password":
+		if message == "Invalid username or password":
 			print("Invalid username or password\nTerminating.")
 			clientSocket.close()
 			return
@@ -63,6 +67,7 @@ def client():
 			#encrypt symmetric key here
 			confirm = "OK"
 			clientSocket.send(confirm.encode('ascii'))
+			print(confirm + "Waiting")
 		
 		
 		#menu = clientSocket.recv(2048).decode('ascii')
@@ -76,7 +81,7 @@ def client():
 		#reply = input(userNameRequest)
 
 		
-		received = clientSocket.recv(2048).decode('ascii')
+		received = clientSocket.recv(2048).decode('ascii') #X?X?X?X?X?X?X?X?
 
 		choice = "0"
 		while (received != "4"):
@@ -170,17 +175,38 @@ def getPubKey():
 	return pubKey
 	
 def encryptWithPublic(message):
-	pubkey = RSA.import_key(getPubKey())
+	pubkey = RSA.importKey(getPubKey()) #here
 	cipher_rsa_en = PKCS1_OAEP.new(pubkey)
-	enc_dat = cipher_rsa_en.encrypt(message.encode('ascii'))
-	return enc_dat
+	enc_data = cipher_rsa_en.encrypt(pad(message).encode('ascii'))
+	print(enc_data)
+	return enc_data
+
+def decryptionPublic(encryptedMessage):
+	pubkey = RSA.importKey(getPubKey()) #here
+	cipher_rsa_dec = PKCS1_OAEP.new(pubkey)
+	dec_data = cipher_rsa_dec.decrypt(encryptedMessage)
+	return unpad(dec_data)
 
 ######################################################
 def fileSymKey(clientName, encSymKey):
 	keyFile = open(clientName + "_private.pem", "wb")
 	keyFile.write(encSymKey)
 	
+########################################################
+#PADDING SECTION
+
+def pad(s):
+	#while len(s) % 16 != 0:
+		#s = s + "{"
+	lambda s: s + (16 - len(s) % 16) * '{'
+	return s
+
+def unpad(message):
+	message = message.rstrip('{')
+	return message
+
 	
 
 #------
 client()
+
