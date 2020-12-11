@@ -8,6 +8,7 @@ import socket
 import sys
 import os 
 import random
+import time
 
 from Crypto.Cipher import AES
 # from Crypto.Util.Padding import pad, unpad
@@ -102,8 +103,8 @@ def server():
 						
 
 					elif userChoice == "2":
-						viewInbox()
 						connectionSocket.send("2".encode('ascii'))
+						viewInbox(connectionSocket, SAVE_PATH)
 						
 					elif userChoice == "3":
 						viewEmail()
@@ -173,9 +174,28 @@ def receiveEmail(connectionSocket, SAVE_PATH):
 	print("An email from " + emailFrom + " is sent to " + emailTo + ", has a content length " + emailLength + ".")
 
 	
-
-def viewInbox():
-	print("call to view inbox protocol")
+def viewInbox(connectionSocket, SAVE_PATH):
+	username = connectionSocket.recv(2048).decode('ascii')
+	path = SAVE_PATH + username + "/"
+	clientMail = os.listdir(path)
+	index = 1
+	for mail in clientMail:
+		with open(path + mail, 'r') as file1:
+			for line in file1:
+				if line.split(":")[0] == "From":
+					Sender = line.split(": ")[1].rstrip()
+				if line.split(":")[0] == "Time and Date":
+					timeSent = line.split(": ")[1].rstrip()
+				if line.split(":")[0] == "Title":
+					title = line.split(": ")[1].rstrip()
+					
+		mailIndex = str(index)
+		email = "#" + mailIndex + ", sent by " + Sender + ", at " + timeSent + ": " + title
+		connectionSocket.send(email.encode('ascii'))
+		time.sleep(0.00001)
+		index += 1
+		
+	connectionSocket.send("TERMINATE".encode('ascii'))
 
 def viewEmail():
 	print("call to view email")
@@ -189,7 +209,4 @@ def viewEmail():
 
 #---------
 server()
-
-
-
 

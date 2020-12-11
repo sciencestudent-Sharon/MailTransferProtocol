@@ -65,7 +65,7 @@ def client():
 
 		
 		received = clientSocket.recv(2048).decode('ascii')
-		print(message)
+
 		choice = "0"
 		while (received != "4"):
 	
@@ -74,8 +74,7 @@ def client():
 				clientSocket.send(choice.encode('ascii'))
 
 			elif received == "2":
-				viewInbox()
-				choice = input("Choice: ")
+				choice = viewInbox(clientSocket, username)
 				clientSocket.send(choice.encode('ascii'))
 
 			elif received == "3":
@@ -122,9 +121,14 @@ def sendEmail(clientSocket, username):
 	print("The message is sent to the server")
 	return "0"
 
-
-def viewInbox():
-	print("call to view inbox protocol")
+def viewInbox(clientSocket, username):
+	choice = username
+	clientSocket.send(choice.encode('ascii'))
+	message = clientSocket.recv(2048).decode('ascii')
+	while message != "TERMINATE":
+		print(message)
+		message = clientSocket.recv(2048).decode('ascii')
+	return "0"
 
 def viewEmail():
 	print("call to view email")
@@ -138,4 +142,3 @@ def viewEmail():
 
 #------
 client()
-
