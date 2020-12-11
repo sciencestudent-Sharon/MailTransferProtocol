@@ -9,7 +9,7 @@ import socket
 import sys
 
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+# from Crypto.Util.Padding import pad, unpad
 
 def client():
 
@@ -53,34 +53,45 @@ def client():
 			clientSocket.send(confirm.encode('ascii'))
 		
 		
-		menu = clientSocket.recv(2048).decode('ascii')
+		#menu = clientSocket.recv(2048).decode('ascii')
 		#decrypt menu message here
-		choice = input(menu)	
+		#choice = input(menu)	
 			
 		#encrypt choice here
-		clientSocket.send(choice.encode('ascii'))	
+		#clientSocket.send(choice.encode('ascii'))	
 			
 		#userNameRequest = clientSocket.recv(2048).decode('ascii')
 		#reply = input(userNameRequest)
+
 		
-		while (choice != "4"):
-			
-			if choice == "1":
-				sendEmail()
+		received = clientSocket.recv(2048).decode('ascii')
+		print(message)
+		choice = "0"
+		while (received != "4"):
+	
+			if received == "Send the email":
+				choice = sendEmail(clientSocket, username)
+				clientSocket.send(choice.encode('ascii'))
 
-			elif choice == "2":
+			elif received == "2":
 				viewInbox()
+				choice = input("Choice: ")
+				clientSocket.send(choice.encode('ascii'))
 
-			elif choice == "3":
+			elif received == "3":
 				viewEmail()
+				choice = input("Choice: ")
+				clientSocket.send(choice.encode('ascii'))
 
 			else:
-				choice = input(menu)
-				continue
+				choice = input(received)
+				clientSocket.send(choice.encode('ascii'))
+				#choice = input(menu)
 				
-			choice = input(menu)
+			
 			#encrypt choice here
-			clientSocket.send(choice.encode('ascii'))
+			received = clientSocket.recv(2048).decode('ascii')
+			
 			
 		
 		serverTerminate = clientSocket.recv(2048).decode('ascii')
@@ -99,8 +110,17 @@ def client():
 #Functions
 ###########################################################
 
-def sendEmail():
-	print("call to send email protocol")
+def sendEmail(clientSocket, username):
+	choice = username
+	clientSocket.send(choice.encode('ascii'))
+	message = clientSocket.recv(2048).decode('ascii')
+	while message != "TERMINATE":
+		choice = input(message)
+		clientSocket.send(choice.encode('ascii'))
+		message = clientSocket.recv(2048).decode('ascii')
+		
+	print("The message is sent to the server")
+	return "0"
 
 
 def viewInbox():

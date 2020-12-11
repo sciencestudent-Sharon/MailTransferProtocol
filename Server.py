@@ -10,7 +10,7 @@ import os
 import random
 
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+# from Crypto.Util.Padding import pad, unpad
 
 
 def server():
@@ -18,6 +18,7 @@ def server():
 
 	#Server port
 	serverPort = 13000
+	MENU = "Select the operation:\n\t1) Create and send an email\n\t2) Display the inbox list\n\t3) Display the email contents\n\t4) Terminate the connection\nChoice: "
 	
 	#Server sockets: uses IPv4 and TCP protocols
 	try:
@@ -79,34 +80,45 @@ def server():
 				print(clientConfirm)
 				#decrypt confirmation here
 				
-				menu = "Select the operation:\n\t1) Create and send an email\n\t2) Display the inbox list\n\t3) Display the email contents\n\t4) Terminate the connection\nChoice: "
-				connectionSocket.send(menu.encode('ascii'))
+
+				#connectionSocket.send(menu.encode('ascii'))
 				
 				
-				userChoice = connectionSocket.recv(2048).decode('ascii')
+				#userChoice = connectionSocket.recv(2048).decode('ascii')
+				userChoice = "0"
+				
 				#decrypt userchoice here
+
 				
+				connectionSocket.send(MENU.encode('ascii'))
+
+				userChoice = connectionSocket.recv(2048).decode('ascii')
+
 				while (userChoice != "4"):
 				
 					if userChoice == "1":
-						sendEmail()
+						connectionSocket.send("Send the email".encode('ascii'))
+						receiveEmail(connectionSocket)
+						
 
 					elif userChoice == "2":
 						viewInbox()
-
+						connectionSocket.send("2".encode('ascii'))
+						
 					elif userChoice == "3":
 						viewEmail()
+						connectionSocket.send("3".encode('ascii'))
 						
 					else:
-						continue
+						connectionSocket.send(MENU.encode('ascii'))
 						
 					userChoice = connectionSocket.recv(2048).decode('ascii')
 				
 				
-				terminateMessage = "Terminating connection with " + "<insert username>"
+				terminateMessage = "4"
 				#encrypt terminateMessage here 
 				connectionSocket.send(terminateMessage.encode('ascii'))
-				print(terminateMessage)
+				print("Connection terminated")
 				connectionSocket.close()
 
 				##############################################################
@@ -119,10 +131,10 @@ def server():
 			print('Error occurred: ', e)
 			serverSocket.close()
 			sys.exit(1)
-		except:
-			print('Goodbye')
-			serverSocket.close()
-			sys.exit(0)
+		#except:
+			#print('Goodbye')
+			#serverSocket.close()
+			#sys.exit(0)
 
 
 
@@ -130,9 +142,22 @@ def server():
 #menu Functions
 ###########################################################
 
-def sendEmail():
-	print("call to send email protocol")
+def receiveEmail(connectionSocket):
+	emailFrom = connectionSocket.recv(2048).decode('ascii')
+	connectionSocket.send("Send to: ".encode('ascii'))
+	emailTo = connectionSocket.recv(2048).decode('ascii')
+	connectionSocket.send("Title: ".encode('ascii'))
+	emailTitle = connectionSocket.recv(2048).decode('ascii')
+	connectionSocket.send("Message: ".encode('ascii'))
+	emailMessage = connectionSocket.recv(2048).decode('ascii')
+	emailLength = str(len(emailMessage))
+	emailTime = "12:00"
+	email = "From: " + emailFrom + "\nTo: " + emailTo + "\nTime and Date: " + emailTime + "\nTitle: " + emailTitle + "\nContent length: " + emailLength + "\nContent: " + emailMessage
 
+	connectionSocket.send("TERMINATE".encode('ascii'))
+	print("An email from " + emailFrom + " is sent to " + emailTo + ", has a content length " + emailLength + ".")
+
+	
 
 def viewInbox():
 	print("call to view inbox protocol")
@@ -149,3 +174,5 @@ def viewEmail():
 
 #---------
 server()
+
+
