@@ -8,17 +8,15 @@ import socket
 import sys
 import os 
 import random
-<<<<<<< HEAD
 import json
-=======
 import time
->>>>>>> 75bec65bcb68f0219c3df6a9f2a54e1f92e0bb38
 
 from Crypto.Cipher import AES
 # from Crypto.Util.Padding import pad, unpad
 
 
 def server():
+	#SAVE_PATH = ("/home/sharon/Documents/")
 	SAVE_PATH = ("/home/kali/Desktop/")
 
 	#Server port
@@ -83,6 +81,8 @@ def server():
 					connectionSocket.send(invalidMessage.encode('ascii'))
 					print("The received client information: " + "is invalid (Connection Terminated).")
 					connectionSocket.close()
+					return
+
 				
 				#receive client OK
 				clientConfirm = connectionSocket.recv(2048).decode('ascii')
