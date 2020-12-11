@@ -131,6 +131,10 @@ def server():
 			print('Error occurred: ', e)
 			serverSocket.close()
 			sys.exit(1)
+		
+		except Exception as inst:
+			print('Error with', inst)
+		
 		#except:
 			#print('Goodbye')
 			#serverSocket.close()
