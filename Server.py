@@ -107,8 +107,8 @@ def server():
 						viewInbox(connectionSocket, SAVE_PATH)
 						
 					elif userChoice == "3":
-						viewEmail()
 						connectionSocket.send("3".encode('ascii'))
+						viewEmail(connectionSocket, SAVE_PATH)
 						
 					else:
 						connectionSocket.send(MENU.encode('ascii'))
@@ -190,15 +190,26 @@ def viewInbox(connectionSocket, SAVE_PATH):
 					title = line.split(": ")[1].rstrip()
 					
 		mailIndex = str(index)
-		email = "#" + mailIndex + ", sent by " + Sender + ", at " + timeSent + ": " + title
+		email = mailIndex + "\t" + Sender + "\t" + timeSent + "\t" + title
 		connectionSocket.send(email.encode('ascii'))
-		time.sleep(0.00001)
+		time.sleep(0.0001)
 		index += 1
 		
 	connectionSocket.send("TERMINATE".encode('ascii'))
 
-def viewEmail():
-	print("call to view email")
+def viewEmail(connectionSocket, SAVE_PATH):
+	username = connectionSocket.recv(2048).decode('ascii')
+	path = SAVE_PATH + username + "/"
+	clientMail = os.listdir(path)
+	connectionSocket.send("Enter the email index you wish to view: ".encode('ascii'))
+	index = connectionSocket.recv(2048).decode('ascii')
+	file1 = open(path + clientMail[int(index) -1], 'r')
+	for line in file1:
+		connectionSocket.send(line.rstrip().encode('ascii'))
+		time.sleep(0.0001)
+	connectionSocket.send("TERMINATE".encode('ascii'))
+	
+	
 	
 ###########################################################
 #encryption/decryption Functions
