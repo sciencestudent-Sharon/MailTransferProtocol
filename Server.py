@@ -8,6 +8,7 @@ import socket
 import sys
 import os 
 import random
+import json
 
 from Crypto.Cipher import AES
 # from Crypto.Util.Padding import pad, unpad
@@ -57,11 +58,15 @@ def server():
 				
 				#Server sends welcome to client & receives their name
 				clientInfo = connectionSocket.recv(2048).decode('ascii')
-				print(clientInfo)
 				
 				#decrypt client info
+				
 				#check if client info valid
-				valid = True
+				info_split = clientInfo.split('\n')
+				userName = info_split[0]
+				userPassword = info_split[1]				
+				valid = checkClient(userName,userPassword) #validity variable
+				
 				if valid == True:
 					#generate symm key here
 					#send symm key to client here
@@ -168,10 +173,13 @@ def viewEmail():
 ###########################################################
 #encryption/decryption Functions
 ###########################################################
-
-
-
-
+def checkClient(name, password):
+	with open('user_pass.json') as file:
+		data = json.load(file)
+	if name in data and data[name] == password:
+		return True
+	else:
+		return False
 #---------
 server()
 
