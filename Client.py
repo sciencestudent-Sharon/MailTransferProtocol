@@ -45,6 +45,7 @@ def client():
 		if message == "Invalid username or password":
 			print("Invalid username or password\nTerminating.")
 			clientSocket.close()
+			return
 		else:
 			#decrypt message here
 			#store key here
