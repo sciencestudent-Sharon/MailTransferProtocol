@@ -17,7 +17,7 @@ from Crypto.Random import get_random_bytes
 from Crypto.Cipher import PKCS1_OAEP
 
 from Crypto.Cipher import AES
-#from Crypto.Util.Padding import pad, unpad
+from Crypto.Util.Padding import pad, unpad
 
 def client():
 
@@ -42,33 +42,36 @@ def client():
 		password = input("Enter your password: ")
 		clientInfo += username + '\n' + password
 
-		#clientInfo = encryptWithPublic(clientInfo)
-		#public_key = clientInfo.publickey().exportKey() #here
+		clientInfo = encryptWithPublic(clientInfo)
 
 		#here, encryption with server public key on clientinfo
 		#send client info
-		#clientSocket.send(encryptWithPublic(clientInfo)) #X?X?X?X?X?X?X?X?X?X?
-		clientSocket.send(clientInfo.encode('ascii'))
+		clientSocket.send(clientInfo)
 		
 		
-		message = clientSocket.recv(2048) #X?X?X?X?X?X?X?X?
-		#print(message) #<---------UNCOMMMENT
-		#print(decrypt(pubEncMessage))
-		#message = decryptionPublic(pubEncMessage) #correct
-		#message = pubEncMessage.decode('ascii') #replace
-	
+		message = clientSocket.recv(2048)
+		#print(message)
+		 #<----- REMOVE
+		new_message = ""
 		
-		if message == "Invalid username or password":
+		try:
+			new_message = message.decode('ascii')
+		except:
+			pass
+		
+		if new_message == "Invalid username or password":
 			print("Invalid username or password\nTerminating.")
 			clientSocket.close()
-			return
+			
 		else:
 			#decrypt message here
 			#store key here
 			#encrypt symmetric key here
-			session_key = message
-			clientSocket.send(encrypt("OK", session_key))
 			
+			key = decryptSymKey(username, message)
+			fileSymKey(username, key)
+			confirm = "OK"
+			clientSocket.send(confirm.encode('ascii'))
 		
 		
 		#menu = clientSocket.recv(2048).decode('ascii')
@@ -82,34 +85,34 @@ def client():
 		#reply = input(userNameRequest)
 
 		
-		received = decrypt(clientSocket.recv(2048), session_key) #X?X?X?X?X?X?X?X?
+		received = clientSocket.recv(2048).decode('ascii')
 
 		choice = "0"
 		while (received != "4"):
 	
 			if received == "Send the email":
-				choice = sendEmail(clientSocket, username, session_key)
-				clientSocket.send(encrypt(choice, session_key))
+				choice = sendEmail(clientSocket, username)
+				clientSocket.send(choice.encode('ascii'))
 
 			elif received == "2":
-				choice = viewInbox(clientSocket, username, session_key)
-				clientSocket.send(encrypt(choice, session_key))
+				choice = viewInbox(clientSocket, username)
+				clientSocket.send(choice.encode('ascii'))
 
 			elif received == "3":
-				choice = viewEmail(clientSocket, username, session_key)
-				clientSocket.send(encrypt(choice, session_key))
+				choice = viewEmail(clientSocket, username)
+				clientSocket.send(choice.encode('ascii'))
 
 			else:
 				choice = input(received)
-				clientSocket.send(encrypt(choice, session_key))
+				clientSocket.send(choice.encode('ascii'))
 				
 			
 			#encrypt choice here
-			received = decrypt(clientSocket.recv(2048), session_key)
+			received = clientSocket.recv(2048).decode('ascii')
 			
 			
 		
-		serverTerminate = encrypt(clientSocket.recv(2048),session_key)
+		serverTerminate = clientSocket.recv(2048).decode('ascii')
 		#decrypt serverTerminate here using sym_key
 		print("The connection is terminated with the server.")
 		clientSocket.close() 
@@ -125,41 +128,41 @@ def client():
 #Functions
 ###########################################################
 
-def sendEmail(clientSocket, username, session_key):
+def sendEmail(clientSocket, username):
 	choice = username
-	clientSocket.send(encrypt(choice, session_key))
-	message = decrypt(clientSocket.recv(2048), session_key)
+	clientSocket.send(choice.encode('ascii'))
+	message = clientSocket.recv(2048).decode('ascii')
 	while message != "TERMINATE":
 		choice = input(message)
-		clientSocket.send(encrypt(choice, session_key))
-		message = decrypt(clientSocket.recv(2048), session_key)
+		clientSocket.send(choice.encode('ascii'))
+		message = clientSocket.recv(2048).decode('ascii')
 		
 	print("The message is sent to the server")
 	print()
 	return "0"
 
-def viewInbox(clientSocket, username, session_key):
+def viewInbox(clientSocket, username):
 	print("Index\tFrom\tDateTime\t\tTitle")
 	choice = username
-	clientSocket.send(encrypt(choice, session_key))
-	message = decrypt(clientSocket.recv(2048), session_key)
+	clientSocket.send(choice.encode('ascii'))
+	message = clientSocket.recv(2048).decode('ascii')
 	while message != "TERMINATE":
 		print(message)
-		message = decrypt(clientSocket.recv(2048), session_key)
+		message = clientSocket.recv(2048).decode('ascii')
 	print()
 	return "0"
 
-def viewEmail(clientSocket, username, session_key):
+def viewEmail(clientSocket, username):
 	choice = username
-	clientSocket.send(encrypt(choice, session_key))
-	message = decrypt(clientSocket.recv(2048), session_key)
+	clientSocket.send(choice.encode('ascii'))
+	message = clientSocket.recv(2048).decode('ascii')
 	choice = input(message)
-	clientSocket.send(encrypt(choice, session_key))
+	clientSocket.send(choice.encode('ascii'))
 	print()
-	message = decrypt(clientSocket.recv(2048), session_key)
+	message = clientSocket.recv(2048).decode('ascii')
 	while message != "TERMINATE":
 		print(message)
-		message = decrypt(clientSocket.recv(2048), session_key)
+		message = clientSocket.recv(2048).decode('ascii')
 	print()
 	return "0"
 
@@ -174,63 +177,30 @@ def fileHandler(fname):
 def getPubKey():
 	pubKey = fileHandler("server_public.pem")
 	return pubKey
-
-def getPrivKey():
-	privKey = fileHandler("server_private.pem")
-	return privKey
 	
 def encryptWithPublic(message):
-	pubkey = RSA.importKey(getPubKey()) #here
+	pubkey = RSA.import_key(getPubKey())
 	cipher_rsa_en = PKCS1_OAEP.new(pubkey)
-	enc_data = cipher_rsa_en.encrypt(pad(message).encode('ascii'))
-	print(enc_data)
-	return enc_data
-
-def decryptionPublic(encryptedMessage):
-	pubkey = RSA.importKey(getPubKey()) #here
-	cipher_rsa_dec = PKCS1_OAEP.new(pubkey)
-	dec_data = cipher_rsa_dec.decrypt(encryptedMessage)
-	return unpad(dec_data)
-
-def encrypt(message, session_key):
-	message = pad(message)
-	data = message.encode("utf-8")
-
-	cipher_aes = AES.new(session_key, AES.MODE_ECB)
-	ciphertext = cipher_aes.encrypt(data)
-	return ciphertext
-
-def decrypt(message, session_key):
-	cipher_aes = AES.new(session_key, AES.MODE_ECB)
-	data = cipher_aes.decrypt(message)
-	return unpad(data.decode("utf-8"))
-
-def decryptKey(session_key):
-	recipient_key = RSA.importKey(getPubKey())
-	cipher_rsa = PKCS1_OAEP.new(recipient_key)
-	dec_session_key = cipher_rsa.decrypt(session_key)
-	return dec_session_key
-		
+	enc_dat = cipher_rsa_en.encrypt(message.encode('ascii'))
+	return enc_dat
 
 ######################################################
-def fileSymKey(clientName, encSymKey):
-	keyFile = open(clientName + "_private.pem", "wb")
-	keyFile.write(encSymKey)
+def fileSymKey(clientName, SymKey):
+	keyFile = open(clientName + "_symKey.pem", "wb")
+	keyFile.write(SymKey)
+	keyFile.close()
 	
-########################################################
-#PADDING SECTION
-
-def pad(s):
-	while len(s) % 16 != 0:
-		s = s + "{"
-	lambda s: s + (16 - len(s) % 16) * '{'
-	return s
-
-def unpad(message):
-	message = message.rstrip('{')
-	return message
-
 	
+#before 
+def decryptSymKey(clientName, key):
+	private_key = fileHandler(clientName + "_private.pem")
+	private_key = RSA.import_key(private_key)
+	cipher_rsa = PKCS1_OAEP.new(private_key)
+	session_key = cipher_rsa.decrypt(key)
+	
+	return session_key
+
+
 
 #------
 client()

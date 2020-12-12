@@ -53,13 +53,11 @@ def showKeys():
 	pubkeyToFile(key, "client4_public.pem")
 	pubkeyToFile(key, "client5_public.pem")
 	
-	'''
-	privkeyToFile("client1_private.pem")
-	privkeyToFile("client2_private.pem")
-	privkeyToFile("client3_private.pem")
-	privkeyToFile("client4_private.pem")
-	privkeyToFile("client5_private.pem")
-	'''
+	privkeyToFile(key, "client1_private.pem")
+	privkeyToFile(key, "client2_private.pem")
+	privkeyToFile(key, "client3_private.pem")
+	privkeyToFile(key, "client4_private.pem")
+	privkeyToFile(key, "client5_private.pem")
 	
 	
 #------
