@@ -1,6 +1,6 @@
-# CMPT 361 Fall Project
+# Mail Transfer Protocol
 
 Authors:
-- Desmond Adeyanju
-- Derek Fortin
-- Sharon Lee
+- Desmond A
+- Derek F
+- Sharon L
